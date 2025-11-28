@@ -1,0 +1,9 @@
+{
+  "name": "claude-code-memory",
+  "description": "Automatically maintains CLAUDE.md files as codebases evolve using hooks, agents, and skills",
+  "version": "1.0.0",
+  "author": {
+    "name": "severity1"
+  },
+  "license": "MIT"
+}

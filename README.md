@@ -1,0 +1,169 @@
+# claude-code-memory
+
+Automatically maintains CLAUDE.md files as codebases evolve.
+
+## Overview
+
+This Claude Code plugin keeps your project's CLAUDE.md documentation in sync with code changes. It uses a token-efficient architecture with hooks, agents, and skills to track file modifications and update relevant documentation sections automatically.
+
+## Features
+
+- **Automatic sync**: Tracks Edit/Write operations and updates CLAUDE.md at end of turn
+- **Zero-token tracking**: PostToolUse hook has no output, pure file tracking
+- **Isolated processing**: Agent runs in separate context, doesn't bloat conversation
+- **Marker-based updates**: Only modifies AUTO-MANAGED sections, preserves manual content
+- **Subtree support**: Hierarchical CLAUDE.md for monorepos
+
+## Installation
+
+### From Marketplace
+
+```bash
+claude plugin marketplace add severity1/claude-code-marketplace
+claude plugin install claude-code-memory@claude-code-marketplace
+```
+
+### Local Development
+
+```bash
+# Add local marketplace
+claude plugin marketplace add /path/to/claude-code-memory/.dev-marketplace/.claude-plugin/marketplace.json
+
+# Install from local
+claude plugin install claude-code-memory@local-dev
+```
+
+## Commands
+
+### `/memory-init`
+
+Initialize CLAUDE.md structure for your project with an interactive wizard.
+
+```
+/memory-init
+```
+
+The wizard will:
+1. Analyze your codebase structure
+2. Detect frameworks and build commands
+3. Identify subtree candidates (for monorepos)
+4. Present findings for your approval
+5. Generate CLAUDE.md with auto-managed sections
+
+### `/memory-sync`
+
+Force a full recalibration of all CLAUDE.md files.
+
+```
+/memory-sync
+```
+
+### `/memory-status`
+
+Show current sync status and pending changes.
+
+```
+/memory-status
+```
+
+## How It Works
+
+### Architecture
+
+```
+PostToolUse Hook (Edit|Write)
+    |
+    v (append file paths)
+.claude/.dirty-files
+    |
+    v (end of turn)
+Stop Hook
+    |
+    v (spawn agent)
+memory-updater Agent (isolated context)
+    |
+    v (invoke skill)
+memory-processor Skill
+    |
+    v
+CLAUDE.md updated
+```
+
+### Token Efficiency
+
+- **PostToolUse hook**: Zero token cost (no output)
+- **Stop hook**: Minimal output only when dirty files exist
+- **Agent**: Runs in isolated context (~50 tokens)
+- **Skills**: Progressive disclosure - load only when invoked
+
+## CLAUDE.md Format
+
+Auto-managed sections use HTML comment markers:
+
+```markdown
+<!-- AUTO-MANAGED: section-name -->
+Content automatically updated by plugin
+<!-- END AUTO-MANAGED -->
+
+<!-- MANUAL -->
+Content never touched by plugin
+<!-- END MANUAL -->
+```
+
+### Supported Sections
+
+- `project-description` - Project overview
+- `build-commands` - Build, test, lint commands
+- `architecture` - Directory structure, components
+- `conventions` - Code standards, naming patterns
+- `patterns` - AI-detected coding patterns
+- `git-insights` - Decisions from commit history
+- `best-practices` - From official Claude Code docs
+
+## Development
+
+### Setup
+
+```bash
+# Install dev dependencies
+uv sync --extra dev
+
+# Run tests
+uv run pytest
+
+# Format code
+uv run ruff format .
+
+# Lint
+uv run ruff check .
+
+# Type check
+uv run mypy .
+```
+
+### Project Structure
+
+```
+claude-code-memory/
+├── .claude-plugin/
+│   └── plugin.json           # Plugin metadata
+├── hooks/
+│   └── hooks.json            # Hook registration
+├── scripts/
+│   ├── post-tool-use.py      # Track file changes
+│   └── stop.py               # End-of-turn trigger
+├── agents/
+│   └── memory-updater.md     # Orchestrator agent
+├── skills/
+│   ├── memory-processor/     # Update processing
+│   └── codebase-analyzer/    # Init wizard
+├── commands/
+│   ├── memory-init.md
+│   ├── memory-sync.md
+│   └── memory-status.md
+└── tests/
+```
+
+## License
+
+MIT
