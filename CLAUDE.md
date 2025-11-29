@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <!-- AUTO-MANAGED: project-description -->
 ## Overview
 
-auto-memory plugin - automatically maintains CLAUDE.md files as codebases evolve. Tagline: "Your CLAUDE.md, always in sync. Zero tokens. Zero config. Just works."
+**auto-memory** plugin (v0.1.0) - automatically maintains CLAUDE.md files as codebases evolve. Tagline: "Your CLAUDE.md, always in sync. Zero tokens. Zero config. Just works."
 
 Watches what you edit, delete, and move, then quietly updates project documentation in the background. Uses PostToolUse hooks to track Edit/Write/Bash operations (including rm, mv, git rm, git mv, unlink), stores changes in .dirty-files, then triggers isolated memory-updater agent to process and update documentation sections with detected patterns, conventions, and architecture insights. Zero manual maintenance needed.
 
@@ -15,11 +15,13 @@ Watches what you edit, delete, and move, then quietly updates project documentat
 ## Build & Development Commands
 
 - `uv sync` - Install dependencies (uses uv package manager)
-- `uv run pytest` - Run test suite
-- `uv run pytest tests/test_hooks.py -v` - Run specific test file
-- `uv run ruff check .` - Lint code
-- `uv run ruff format .` - Format code
-- `uv run mypy .` - Type checking
+- `uv run pytest` - Run full test suite
+- `uv run pytest tests/test_hooks.py -v` - Run specific test file with verbose output
+- `uv run ruff check .` - Lint code (E, F, I, N, W, UP rules, 100 char line length)
+- `uv run ruff format .` - Format code to style standards
+- `uv run mypy .` - Type checking in strict mode
+
+**Package**: Published as `claude-code-auto-memory` on PyPI with minimal dependencies (dev dependencies: pytest, pyyaml, ruff, mypy)
 
 <!-- END AUTO-MANAGED -->
 
