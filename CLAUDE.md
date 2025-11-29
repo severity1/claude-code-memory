@@ -5,7 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <!-- AUTO-MANAGED: project-description -->
 ## Overview
 
-Claude Code Memory plugin - automatically maintains CLAUDE.md files as codebases evolve. Uses hooks to track file changes and agents to update documentation sections with detected patterns, conventions, and architecture insights.
+Claude Code Memory plugin - automatically maintains CLAUDE.md files as codebases evolve. Tagline: "Your CLAUDE.md, always in sync. Zero tokens. Zero config. Just works."
+
+Watches what you edit, delete, and move, then quietly updates project documentation in the background. Uses PostToolUse hooks to track Edit/Write/Bash operations (including rm, mv, git rm, git mv, unlink), stores changes in .dirty-files, then triggers isolated memory-updater agent to process and update documentation sections with detected patterns, conventions, and architecture insights. Zero manual maintenance needed.
 
 <!-- END AUTO-MANAGED -->
 
@@ -43,7 +45,7 @@ claude-code-memory/
 └── tests/             # pytest test suite
 ```
 
-**Data Flow**: Edit/Write -> post-tool-use.py -> .dirty-files -> stop.py -> memory-updater agent -> memory-processor skill -> CLAUDE.md updates
+**Data Flow**: Edit/Write/Bash (rm, mv, git rm, git mv, unlink) -> post-tool-use.py -> .dirty-files -> stop.py -> memory-updater agent -> memory-processor skill -> CLAUDE.md updates
 
 <!-- END AUTO-MANAGED -->
 
@@ -64,7 +66,7 @@ claude-code-memory/
 
 - **Hook Scripts**: Produce no stdout output (zero token cost design)
 - **File Filtering**: Exclude `.claude/` directory and CLAUDE.md files to prevent tracking and infinite loops
-- **Bash Command Parsing**: Use `shlex.split()` for robust command tokenization; detect rm, mv, git rm, git mv, unlink operations
+- **Bash Operation Tracking**: Detects rm, mv, git rm, git mv, unlink commands to track file deletions/moves; use `shlex.split()` for robust command tokenization
 - **Command Skip List**: Filter read-only commands (ls, git diff, npm, etc.) before processing to reduce noise
 - **Path Resolution**: Convert relative paths to absolute using project_dir context, then resolve symlinks
 - **CLAUDE.md Markers**: Use `<!-- AUTO-MANAGED: section-name -->` and `<!-- END AUTO-MANAGED -->` for auto-updated sections

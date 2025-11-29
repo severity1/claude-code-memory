@@ -1,6 +1,8 @@
 # claude-code-memory
 
-**Automatic CLAUDE.md maintenance for Claude Code** - Zero-config plugin that keeps your project context in sync as your codebase evolves.
+**Your CLAUDE.md, always in sync.** Zero tokens. Zero config. Just works.
+
+A Claude Code plugin that watches what you edit, delete, and move - then quietly updates your project documentation in the background. No manual maintenance needed.
 
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)](https://claude.ai/code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
