@@ -37,9 +37,10 @@ claude-code-auto-memory/
 │   ├── codebase-analyzer/  # Analyzes codebase, generates CLAUDE.md templates
 │   └── memory-processor/   # Processes file changes, updates CLAUDE.md sections
 ├── commands/          # Slash commands (markdown files)
-│   ├── memory-init.md     # Initialize CLAUDE.md structure
-│   ├── memory-calibrate.md # Force recalibration
-│   └── memory-status.md   # Show sync status
+│   └── auto-memory/      # Namespaced commands (/auto-memory:*)
+│       ├── init.md          # Initialize CLAUDE.md structure
+│       ├── calibrate.md     # Force recalibration
+│       └── status.md        # Show sync status
 ├── agents/            # Agent definitions
 │   └── memory-updater.md  # Orchestrates CLAUDE.md updates
 ├── hooks/             # Hook configuration
