@@ -1,14 +1,9 @@
 {
   "name": "auto-memory",
   "description": "Automatically maintains CLAUDE.md files as codebases evolve using hooks, agents, and skills",
-  "version": "0.4.0",
+  "version": "0.3.0",
   "author": {
     "name": "severity1"
   },
-  "license": "MIT",
-  "commands": [
-    "./commands/auto-memory/init.md",
-    "./commands/auto-memory/calibrate.md",
-    "./commands/auto-memory/status.md"
-  ]
+  "license": "MIT"
 }
