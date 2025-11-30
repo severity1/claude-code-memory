@@ -6,5 +6,9 @@
     "name": "severity1"
   },
   "license": "MIT",
-  "commands": ["./commands/auto-memory/"]
+  "commands": [
+    "./commands/auto-memory/init.md",
+    "./commands/auto-memory/calibrate.md",
+    "./commands/auto-memory/status.md"
+  ]
 }
