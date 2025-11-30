@@ -1,5 +1,4 @@
 ---
-name: memory-status
 description: Show CLAUDE.md sync status
 ---
 

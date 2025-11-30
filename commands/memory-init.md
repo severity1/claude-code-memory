@@ -1,5 +1,4 @@
 ---
-name: memory-init
 description: Initialize CLAUDE.md structure for project with interactive wizard
 ---
 

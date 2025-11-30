@@ -1,5 +1,4 @@
 ---
-name: memory-calibrate
 description: Force recalibration of all CLAUDE.md files
 ---
 
