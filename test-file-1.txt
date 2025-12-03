@@ -1,0 +1,2 @@
+This is a test file to verify gitmode detection.
+Created to test auto-memory git commit enrichment.
