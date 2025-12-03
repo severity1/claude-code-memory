@@ -81,6 +81,19 @@ Force a full recalibration of all CLAUDE.md files.
 /auto-memory:calibrate
 ```
 
+### `/auto-memory:sync`
+
+Sync CLAUDE.md with manual file changes detected by git. Use this when you've edited files outside Claude Code (in your IDE, terminal, etc.) and want to update memory without a full recalibration.
+
+```
+/auto-memory:sync
+```
+
+Detects:
+- Modified tracked files (`git diff`)
+- Staged files (`git diff --cached`)
+- New untracked files (`git ls-files --others`)
+
 ### `/auto-memory:status`
 
 Show current sync status and pending changes.
@@ -178,6 +191,45 @@ Content never touched by plugin
 - `git-insights` - Decisions from commit history
 - `best-practices` - From official Claude Code docs
 
+## Configuration
+
+Optional configuration is stored in `.claude/auto-memory/config.json`.
+
+### Trigger Modes
+
+Control when auto-memory triggers CLAUDE.md updates:
+
+```json
+{
+  "triggerMode": "default"
+}
+```
+
+| Mode | Behavior |
+|------|----------|
+| `default` | Track file edits in real-time (Edit/Write/Bash operations). Best for most workflows. |
+| `gitmode` | Only trigger on `git commit`. Best for developers who commit frequently. |
+
+**Note**: If no config file exists, `default` mode is used.
+
+### Git Commit Enrichment
+
+When a `git commit` is detected (in both modes), auto-memory captures the commit context:
+- Commit hash and message are saved to `.claude/auto-memory/commit-context.json`
+- The memory-updater agent uses this to provide semantic context: "Changes from commit [hash]: [message]"
+
+This helps CLAUDE.md updates reflect the *intent* behind changes, not just which files changed.
+
+### Data Files
+
+All auto-memory state is stored in `.claude/auto-memory/`:
+
+| File | Purpose |
+|------|---------|
+| `dirty-files` | List of files pending CLAUDE.md update |
+| `config.json` | Trigger mode configuration |
+| `commit-context.json` | Last commit hash + message (temporary) |
+
 ## Development
 
 ### Setup
@@ -218,6 +270,7 @@ claude-code-auto-memory/
 ├── commands/
 │   ├── init.md               # /auto-memory:init
 │   ├── calibrate.md          # /auto-memory:calibrate
+│   ├── sync.md               # /auto-memory:sync
 │   └── status.md             # /auto-memory:status
 └── tests/
 ```
@@ -231,7 +284,7 @@ claude-code-auto-memory/
 | Processing | **Isolated agent** | Inline or external service |
 | Updates | **Marker-based** | Full file regeneration |
 | Monorepo | **Subtree CLAUDE.md** | Root only |
-| Config required | **None** | Config files needed |
+| Config required | **Optional** (zero-config default) | Config files needed |
 
 See also: [memory-store-plugin](https://github.com/julep-ai/memory-store-plugin), [claude-mem](https://github.com/thedotmack/claude-mem), [claude-code-branch-memory-manager](https://github.com/Davidcreador/claude-code-branch-memory-manager)
 

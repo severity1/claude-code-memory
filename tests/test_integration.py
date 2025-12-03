@@ -108,10 +108,10 @@ class TestAgentConfiguration:
         frontmatter = parse_markdown_frontmatter(agent_path)
         assert "description" in frontmatter
 
-    def test_agent_uses_haiku(self, agent_path):
-        """Agent uses haiku model for efficiency."""
+    def test_agent_uses_sonnet(self, agent_path):
+        """Agent uses sonnet model (haiku doesn't support extended thinking)."""
         frontmatter = parse_markdown_frontmatter(agent_path)
-        assert frontmatter.get("model") == "haiku"
+        assert frontmatter.get("model") == "sonnet"
 
 
 class TestCommandsConfiguration:

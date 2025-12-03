@@ -2,17 +2,73 @@
 """PostToolUse hook - tracks edited files for CLAUDE.md updates.
 
 Fires after Edit, Write, or Bash tool execution. Appends changed file
-paths to .claude/.dirty-files for batch processing at turn end.
+paths to .claude/auto-memory/dirty-files for batch processing at turn end.
 Produces no output to maintain zero token cost.
+
+Supports configurable trigger modes:
+- default: Track Edit/Write/Bash operations (current behavior)
+- gitmode: Only track git commits
+
+When a git commit is detected, enriches each file path with inline commit
+context: /path/to/file [hash: commit message]
 """
 from __future__ import annotations
 
 import json
 import os
-import re
 import shlex
+import subprocess
 import sys
 from pathlib import Path
+
+
+def load_config(project_dir: str) -> dict:
+    """Load plugin configuration from .claude/auto-memory/config.json."""
+    config_file = Path(project_dir) / ".claude" / "auto-memory" / "config.json"
+    if config_file.exists():
+        try:
+            with open(config_file) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {"triggerMode": "default"}
+
+
+def handle_git_commit(project_dir: str) -> tuple[list[str], dict | None]:
+    """Extract context from a git commit.
+
+    Returns: (files, commit_context) where commit_context is {"hash": ..., "message": ...}
+    """
+    # Get commit info (hash and message)
+    result = subprocess.run(
+        ["git", "log", "-1", "--format=%h %s"],
+        capture_output=True,
+        text=True,
+        cwd=project_dir,
+    )
+    if result.returncode != 0:
+        return [], None
+
+    parts = result.stdout.strip().split(" ", 1)
+    commit_hash = parts[0]
+    commit_message = parts[1] if len(parts) > 1 else ""
+
+    # Get list of committed files
+    result = subprocess.run(
+        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=project_dir,
+    )
+    if result.returncode != 0:
+        return [], {"hash": commit_hash, "message": commit_message}
+
+    files = [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+
+    # Resolve to absolute paths
+    files = [str((Path(project_dir) / f).resolve()) for f in files]
+
+    return files, {"hash": commit_hash, "message": commit_message}
 
 
 def should_track(file_path: str, project_dir: str) -> bool:
@@ -134,6 +190,9 @@ def extract_files_from_bash(command: str, project_dir: str) -> list[str]:
 def main():
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
 
+    if not project_dir:
+        return
+
     # Read tool input from stdin (JSON format)
     try:
         stdin_data = sys.stdin.read()
@@ -144,17 +203,37 @@ def main():
     tool_name = tool_input.get("tool_name", "")
     tool_input_data = tool_input.get("tool_input", {})
 
+    # Load configuration
+    config = load_config(project_dir)
+    trigger_mode = config.get("triggerMode", "default")
+
+    # Check if this is a git commit (anywhere in the command, handles chained commands)
+    is_git_commit = False
+    command = ""
+    if tool_name == "Bash":
+        command = tool_input_data.get("command", "").strip()
+        is_git_commit = "git commit" in command
+
+    # In gitmode, only process git commits
+    if trigger_mode == "gitmode" and not is_git_commit:
+        return
+
     files_to_track = []
+    commit_context = None
+
+    # Handle git commit specially - extract commit context
+    if is_git_commit:
+        files, commit_context = handle_git_commit(project_dir)
+        files_to_track.extend(files)
 
     # Handle Edit/Write tools - extract file_path directly
-    if tool_name in ("Edit", "Write"):
+    elif tool_name in ("Edit", "Write"):
         file_path = tool_input_data.get("file_path", "")
         if file_path:
             files_to_track.append(file_path)
 
     # Handle Bash tool - parse command for file operations
     elif tool_name == "Bash":
-        command = tool_input_data.get("command", "")
         files_to_track = extract_files_from_bash(command, project_dir)
 
     # Legacy support: if no tool_name, try file_path directly
@@ -163,7 +242,7 @@ def main():
         if file_path:
             files_to_track.append(file_path)
 
-    if not project_dir or not files_to_track:
+    if not files_to_track:
         return
 
     # Filter to only trackable files
@@ -172,12 +251,19 @@ def main():
     if not trackable:
         return
 
-    dirty_file = Path(project_dir) / ".claude" / ".dirty-files"
-    dirty_file.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure auto-memory directory exists
+    auto_memory_dir = Path(project_dir) / ".claude" / "auto-memory"
+    auto_memory_dir.mkdir(parents=True, exist_ok=True)
 
+    # Write dirty files (with optional commit context inline)
+    dirty_file = auto_memory_dir / "dirty-files"
     with open(dirty_file, "a") as f:
         for file_path in trackable:
-            f.write(file_path + "\n")
+            if commit_context:
+                # Format: /path/to/file [hash: message]
+                f.write(f"{file_path} [{commit_context['hash']}: {commit_context['message']}]\n")
+            else:
+                f.write(file_path + "\n")
 
     # NO output - zero token cost
 

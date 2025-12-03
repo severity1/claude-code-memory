@@ -26,15 +26,25 @@ def main():
     if input_data.get("stop_hook_active", False):
         return
 
-    dirty_file = Path(project_dir) / ".claude" / ".dirty-files"
+    dirty_file = Path(project_dir) / ".claude" / "auto-memory" / "dirty-files"
 
     # Pass through if no dirty files
     if not dirty_file.exists() or dirty_file.stat().st_size == 0:
         return
 
     # Get unique file list (max 20 files in message)
+    # Lines may have inline commit context: /path/to/file [hash: message]
     with open(dirty_file) as f:
-        files = sorted(set(line.strip() for line in f if line.strip()))[:20]
+        files = set()
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            # Strip inline commit context if present
+            if " [" in line:
+                line = line.split(" [")[0]
+            files.add(line)
+        files = sorted(files)[:20]
 
     if not files:
         return

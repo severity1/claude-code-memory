@@ -43,12 +43,12 @@ class TestPostToolUseHook:
             text=True,
         )
         assert result.returncode == 0
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
 
     def test_appends_paths(self, tmp_path):
         """Hook appends file paths to dirty file."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         existing_file = str(tmp_path / "existing" / "file.py")
         dirty_file.write_text(existing_file + "\n")
@@ -102,7 +102,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert not dirty_file.exists()
 
     def test_excludes_claude_md(self, tmp_path):
@@ -116,7 +116,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert not dirty_file.exists()
 
     def test_excludes_files_outside_project(self, tmp_path):
@@ -130,7 +130,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert not dirty_file.exists()
 
     # Bash command tracking tests
@@ -145,7 +145,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "file.py" in content
@@ -160,7 +160,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "old_module" in content
@@ -175,7 +175,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "file1.py" in content
@@ -192,7 +192,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "obsolete.py" in content
@@ -207,7 +207,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "old_name.py" in content
@@ -224,7 +224,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "temp.txt" in content
@@ -253,7 +253,7 @@ class TestPostToolUseHook:
                 text=True,
             )
 
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert not dirty_file.exists()
 
     def test_bash_no_output(self, tmp_path):
@@ -281,7 +281,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         assert dirty_file.exists()
         content = dirty_file.read_text()
         assert "file.py" in content
@@ -299,7 +299,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         content = dirty_file.read_text()
         assert "old.py" in content
         assert "ls" not in content
@@ -315,7 +315,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         content = dirty_file.read_text()
         assert "build" in content
         assert "tee" not in content
@@ -331,7 +331,7 @@ class TestPostToolUseHook:
             capture_output=True,
             text=True,
         )
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         content = dirty_file.read_text()
         assert "deleted.py" in content
         assert "/dev/null" not in content
@@ -355,7 +355,7 @@ class TestStopHook:
 
     def test_passes_when_active(self, tmp_path):
         """Hook passes through when stop_hook_active is true."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         dirty_file.write_text("/path/to/file.py\n")
 
@@ -372,7 +372,7 @@ class TestStopHook:
 
     def test_blocks_with_files(self, tmp_path):
         """Hook blocks and outputs JSON when dirty files exist."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         dirty_file.write_text("/path/to/file.py\n")
 
@@ -391,7 +391,7 @@ class TestStopHook:
 
     def test_json_format(self, tmp_path):
         """Hook output is valid JSON with required fields."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         dirty_file.write_text("/path/to/file.py\n")
 
@@ -409,7 +409,7 @@ class TestStopHook:
 
     def test_deduplicates_files(self, tmp_path):
         """Hook deduplicates file paths in output."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         dirty_file.write_text("/file.py\n/file.py\n/file.py\n")
 
@@ -427,7 +427,7 @@ class TestStopHook:
 
     def test_limits_file_count(self, tmp_path):
         """Hook limits file list to 20 files max."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         files = [f"/file{i}.py" for i in range(30)]
         dirty_file.write_text("\n".join(files) + "\n")
@@ -450,7 +450,7 @@ class TestStopHook:
 
     def test_handles_invalid_json_input(self, tmp_path):
         """Hook handles invalid JSON input gracefully."""
-        dirty_file = tmp_path / ".claude" / ".dirty-files"
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
         dirty_file.parent.mkdir(parents=True)
         dirty_file.write_text("/path/to/file.py\n")
 

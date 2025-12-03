@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **auto-memory** - automatically maintains CLAUDE.md files as codebases evolve. Tagline: "Your CLAUDE.md, always in sync. Minimal tokens. Zero config. Just works."
 
-Watches what Claude Code edits, deletes, and moves - then quietly updates project memory in the background. Uses PostToolUse hooks to track Edit/Write/Bash operations (including rm, mv, git rm, git mv, unlink), stores changes in .dirty-files, then triggers isolated memory-updater agent to process and update memory sections with detected patterns, conventions, and architecture insights. Processing runs in separate context window, consuming no main session tokens.
+Watches what Claude Code edits, deletes, and moves - then quietly updates project memory in the background. Uses PostToolUse hooks to track Edit/Write/Bash operations (including rm, mv, git rm, git mv, unlink), stores changes in .claude/auto-memory/dirty-files, then triggers isolated memory-updater agent to process and update memory sections with detected patterns, conventions, and architecture insights. Processing runs in separate context window, consuming no main session tokens.
 
 <!-- END AUTO-MANAGED -->
 
@@ -31,23 +31,28 @@ Watches what Claude Code edits, deletes, and moves - then quietly updates projec
 ```
 claude-code-auto-memory/
 ├── scripts/           # Python hook scripts
-│   ├── post-tool-use.py  # Tracks edited files to .claude/.dirty-files
+│   ├── post-tool-use.py  # Tracks edited files; detects git commits for context enrichment
 │   └── stop.py           # Blocks stop if dirty files exist, triggers memory-updater
 ├── skills/            # Skill definitions (SKILL.md files)
 │   ├── codebase-analyzer/  # Analyzes codebase, generates CLAUDE.md templates
 │   └── memory-processor/   # Processes file changes, updates CLAUDE.md sections
 ├── commands/          # Slash commands (markdown files)
-│   ├── init.md               # /auto-memory:init
-│   ├── calibrate.md          # /auto-memory:calibrate
-│   └── status.md             # /auto-memory:status
+│   ├── init.md               # /auto-memory:init - Initialize auto-memory plugin
+│   ├── calibrate.md          # /auto-memory:calibrate - Full codebase recalibration
+│   ├── sync.md               # /auto-memory:sync - Sync manual file changes detected by git
+│   └── status.md             # /auto-memory:status - Show memory status
 ├── agents/            # Agent definitions
-│   └── memory-updater.md  # Orchestrates CLAUDE.md updates
+│   └── memory-updater.md  # Orchestrates CLAUDE.md updates with 6-phase workflow
 ├── hooks/             # Hook configuration
 │   └── hooks.json        # PostToolUse and Stop hook definitions
 └── tests/             # pytest test suite
 ```
 
-**Data Flow**: Edit/Write/Bash (rm, mv, git rm, git mv, unlink) -> post-tool-use.py -> .dirty-files -> stop.py -> memory-updater agent -> memory-processor skill -> CLAUDE.md updates
+**Data Flow**: Edit/Write/Bash (rm, mv, git rm, git mv, unlink) -> post-tool-use.py -> .claude/auto-memory/dirty-files -> stop.py -> memory-updater agent -> memory-processor skill -> CLAUDE.md updates
+
+**State Files** (in `.claude/auto-memory/`):
+- `dirty-files` - Pending file list with optional inline commit context
+- `config.json` - Trigger mode configuration (default or gitmode)
 
 <!-- END AUTO-MANAGED -->
 
@@ -77,8 +82,12 @@ claude-code-auto-memory/
 - **CLAUDE.md Markers**: Use `<!-- AUTO-MANAGED: section-name -->` and `<!-- END AUTO-MANAGED -->` for auto-updated sections
 - **Manual Sections**: Use `<!-- MANUAL -->` markers for user-editable content
 - **Skill Templates**: Use `{{PLACEHOLDER}}` syntax for variable substitution
-- **File Tracking**: Dirty files stored in `.claude/.dirty-files`, one path per line
+- **File Tracking**: Dirty files stored in `.claude/auto-memory/dirty-files`, one path per line with optional inline commit context: `/path/to/file [hash: message]`
+- **Trigger Modes**: Config-driven behavior - `default` mode tracks all Edit/Write/Bash operations; `gitmode` only triggers on git commits; default mode used if config missing
+- **Git Commit Enrichment**: When git commit detected, enriches each file path with inline commit context for semantic context during updates
 - **Stop Hook UX**: Blocks at turn end if dirty files exist; instructs Claude to spawn memory-updater agent using Task tool with formatted file list; suggests reading root CLAUDE.md after agent completes to refresh context
+- **Memory-Updater Agent**: Orchestrates CLAUDE.md updates through 6-phase workflow - load dirty files (parsing inline commit context), gather file context with imports, extract git insights, discover CLAUDE.md targets, invoke memory-processor skill, cleanup dirty-files; processes max 7 files per run with truncated git diffs; designed for minimal token consumption in isolated context
+- **Memory Processor Updates**: Skill analyzes changed files and updates relevant AUTO-MANAGED sections with detected patterns, architecture changes, and new commands; follows content rules (specific, concise, structured); preserves manual sections and maintains < 500 line target
 - **Test Coverage**: Use subprocess to invoke hooks, verify zero output behavior, test file filtering logic
 
 <!-- END AUTO-MANAGED -->
