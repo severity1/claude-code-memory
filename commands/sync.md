@@ -27,7 +27,7 @@ Use this when you've edited files manually (outside Claude Code) and want to upd
 
 5. **If changes found**:
    - Convert paths to absolute paths
-   - Write to `.claude/.dirty-files` (one path per line)
+   - Write to `.claude/auto-memory/dirty-files` (one path per line)
    - Use the Task tool to spawn the `memory-updater` agent with prompt:
      "Update CLAUDE.md for manually changed files: [file list]"
 

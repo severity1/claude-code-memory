@@ -1,14 +1,9 @@
 """Tests for hook scripts."""
-import io
 import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 # Add scripts directory to path
 SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
@@ -466,3 +461,129 @@ class TestStopHook:
         assert result.returncode == 0
         output = json.loads(result.stdout)
         assert output["decision"] == "block"
+
+
+class TestGitCommitContext:
+    """Tests for git commit context enrichment."""
+
+    def _make_bash_input(self, command: str) -> str:
+        """Create JSON input for Bash tool."""
+        return json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {"command": command},
+        })
+
+    def _init_git_repo(self, tmp_path):
+        """Initialize a git repo with an initial commit.
+
+        Creates an initial commit so subsequent commits have a parent
+        for git diff-tree to compare against.
+        """
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        # Create initial commit so later commits have a parent
+        init_file = tmp_path / ".gitkeep"
+        init_file.write_text("")
+        subprocess.run(["git", "add", ".gitkeep"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+
+    def test_handle_git_commit_non_git_directory(self, tmp_path):
+        """handle_git_commit returns empty when not a git repo."""
+        # Import the function directly
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        from importlib import import_module
+        post_tool_use = import_module("post-tool-use")
+
+        files, context = post_tool_use.handle_git_commit(str(tmp_path))
+
+        assert files == []
+        assert context is None
+
+        # Cleanup
+        sys.path.pop(0)
+        sys.modules.pop("post-tool-use", None)
+
+    def test_handle_git_commit_extracts_files_and_context(self, tmp_path):
+        """handle_git_commit extracts files and commit context from git."""
+        # Initialize git repo
+        self._init_git_repo(tmp_path)
+
+        # Create and commit a file
+        test_file = tmp_path / "feature.py"
+        test_file.write_text("print('hello')")
+        subprocess.run(["git", "add", "feature.py"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Add feature"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+
+        # Import the function directly
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        from importlib import import_module
+        post_tool_use = import_module("post-tool-use")
+
+        files, context = post_tool_use.handle_git_commit(str(tmp_path))
+
+        # Verify files list contains our file
+        assert len(files) == 1
+        assert "feature.py" in files[0]
+
+        # Verify context has hash and message
+        assert context is not None
+        assert "hash" in context
+        assert len(context["hash"]) == 7  # Short hash
+        assert context["message"] == "Add feature"
+
+        # Cleanup
+        sys.path.pop(0)
+        sys.modules.pop("post-tool-use", None)
+
+    def test_commit_enriches_dirty_files_with_context(self, tmp_path):
+        """Git commit command enriches dirty files with inline context."""
+        # Initialize git repo
+        self._init_git_repo(tmp_path)
+
+        # Create and commit a file
+        test_file = tmp_path / "module.py"
+        test_file.write_text("# module")
+        subprocess.run(["git", "add", "module.py"], cwd=tmp_path, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Add module"],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+
+        # Run hook with git commit command
+        env = {"CLAUDE_PROJECT_DIR": str(tmp_path)}
+        subprocess.run(
+            [sys.executable, SCRIPTS_DIR / "post-tool-use.py"],
+            env={**os.environ, **env},
+            input=self._make_bash_input("git commit -m 'Add module'"),
+            capture_output=True,
+            text=True,
+        )
+
+        # Check dirty files contain commit context
+        dirty_file = tmp_path / ".claude" / "auto-memory" / "dirty-files"
+        assert dirty_file.exists()
+        content = dirty_file.read_text()
+
+        # Should have file path with inline commit context
+        assert "module.py" in content
+        assert "[" in content  # Context marker
+        assert ":" in content  # hash: message separator
+        assert "Add module" in content

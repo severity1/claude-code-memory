@@ -272,7 +272,8 @@ def main():
     for file_path in trackable:
         if commit_context:
             # Always use commit context version (overwrites plain path)
-            existing[file_path] = f"{file_path} [{commit_context['hash']}: {commit_context['message']}]"
+            ctx = f"[{commit_context['hash']}: {commit_context['message']}]"
+            existing[file_path] = f"{file_path} {ctx}"
         elif file_path not in existing:
             # Only add if not already tracked
             existing[file_path] = file_path
