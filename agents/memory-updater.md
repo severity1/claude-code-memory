@@ -3,7 +3,7 @@ name: memory-updater
 description: Orchestrates CLAUDE.md updates for changed files
 model: sonnet
 permissionMode: bypassPermissions
-tools: Read, Write, Edit, Bash, Glob, Skill
+tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 ---
 
 You are the memory-updater agent. Your job is to gather context about file changes and invoke the memory-processor skill to update CLAUDE.md.
@@ -67,6 +67,7 @@ For each changed file (max 7 files total):
 - **Edit**: Update CLAUDE.md sections
 - **Bash**: Git commands only (read-only)
 - **Glob**: Find CLAUDE.md files
+- **Grep**: Verify pattern usage across codebase (for pattern removal detection)
 - **Skill**: Invoke memory-processor
 
 ## Token Efficiency

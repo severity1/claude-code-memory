@@ -35,7 +35,9 @@ claude-code-auto-memory/
 │   └── stop.py           # Blocks stop if dirty files exist, triggers memory-updater
 ├── skills/            # Skill definitions (SKILL.md files)
 │   ├── codebase-analyzer/  # Analyzes codebase, generates CLAUDE.md templates
-│   └── memory-processor/   # Processes file changes, updates CLAUDE.md sections
+│   ├── memory-processor/   # Processes file changes, updates CLAUDE.md sections
+│   └── shared/references/  # Shared reference files for skills
+│       └── guidelines.md   # Claude Code memory guidelines (imported by skills)
 ├── commands/          # Slash commands (markdown files)
 │   ├── init.md               # /auto-memory:init - Initialize auto-memory plugin
 │   ├── calibrate.md          # /auto-memory:calibrate - Full codebase recalibration
@@ -88,7 +90,10 @@ claude-code-auto-memory/
 - **Git Commit Enrichment**: When git commit detected, enriches each file path with inline commit context for semantic context during updates
 - **Stop Hook UX**: Blocks at turn end if dirty files exist; instructs Claude to spawn memory-updater agent using Task tool with formatted file list; suggests reading root CLAUDE.md after agent completes to refresh context
 - **Memory-Updater Agent**: Orchestrates CLAUDE.md updates through 6-phase workflow using sonnet model - load dirty files (parsing inline commit context format `/path [hash: message]`), gather file context with imports, extract git insights, discover CLAUDE.md targets, invoke memory-processor skill, cleanup dirty-files; processes max 7 files per run with truncated git diffs; designed for minimal token consumption in isolated context
-- **Memory Processor Updates**: Skill analyzes changed files and updates relevant AUTO-MANAGED sections with detected patterns, architecture changes, and new commands; follows content rules (specific, concise, structured); preserves manual sections and maintains < 500 line target; excludes moving targets (version numbers, test counts, dates, metrics) that become stale
+- **Memory Processor Updates**: Skill analyzes changed files and updates relevant AUTO-MANAGED sections with detected patterns, architecture changes, and new commands; uses shared reference file (skills/shared/references/guidelines.md) for Claude Code memory guidelines; follows content rules (specific, concise, structured); preserves manual sections and maintains < 500 line target; excludes moving targets (version numbers, test counts, dates, metrics) that become stale
+- **Content Removal Verification**: Before removing documented content (patterns, conventions, architecture, build commands, dependencies), verifies absence using Grep across codebase; reads current CLAUDE.md section, searches for each missing item in relevant directories excluding node_modules/vendor/.git; keeps documentation if item exists elsewhere, removes only if not found anywhere; distinguishes conventions (explicit human-decided rules) from patterns (AI-detected recurring structures)
+- **Stale Command Detection**: Memory processor compares documented commands against commands that actually executed successfully; updates documented commands to match what worked (e.g., `python pytest` -> `python -m pytest`, `pytest tests/` -> `uv run pytest`); sources from successful Bash tool executions in session context or git commit history
+- **Skill Organization**: Both codebase-analyzer and memory-processor skills use import syntax (@../shared/references/guidelines.md) to load shared guidelines, keeping skill files lean via progressive disclosure pattern
 - **Test Coverage**: Use subprocess to invoke hooks, verify zero output behavior, test file filtering logic; TestGitCommitContext class verifies git commit handling, file extraction, and commit context enrichment; initialize test git repos with initial commit for diff-tree parent reference
 
 <!-- END AUTO-MANAGED -->
